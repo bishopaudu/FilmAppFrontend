@@ -7,19 +7,29 @@ import { Table } from "./components/Table";
 import { Modal } from "./components/Modal";
 
 export default function App() {
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [dataRows, setDataRows] = useState([]);
-  const [searchId, setSearchId] = useState("");
-  const [responseFormat, setResponseFormat] = useState("json");
+  const [searchId, setSearchId] = useState('');
+  const [responseFormat, setResponseFormat] = useState('json');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+
   const getallFilms = "http://localhost:8081/FilmAppApi/films/" 
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = rows.slice(indexOfFirstItem, indexOfLastItem);
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   useEffect(() => {
     fetchFilms();
-  }, []);
+  }, [responseFormat,currentPage]);
 
   useEffect(() => {
-    console.log(dataRows);
+    console.log(dataRows.length);
   }, [dataRows]);
 
   const handleFormatChange = (format) => {
@@ -43,7 +53,6 @@ export default function App() {
     }
   };
 
-  const [rows, setRows] = useState([]);
   const [rowToEdit, setRowToEdit] = useState(null);
 
   const handleDeleteRow = async (targetIndex) => {
@@ -61,7 +70,6 @@ export default function App() {
   };
 
   const searchFilmById = async (filmId) => {
-    if (filmId == ''){
       try {
         const response = await axios.get(`http://localhost:8081/FilmAppApi/films/${filmId}`, {
           headers: {
@@ -73,10 +81,6 @@ export default function App() {
         console.error("Error searching film by ID:", error);
         return null;
       }
-
-    } else {
-      fetchFilms();
-    }
    
   };
   
@@ -137,10 +141,19 @@ export default function App() {
       ) : (
         <>
           <Table
-            rows={rows}
+            rows={currentItems}
             deleteRow={handleDeleteRow}
             editRow={handleEditRow}
           />
+            {/* Pagination controls */}
+            <div className="pagination-container">
+            <button className="btn" onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
+              Previous
+            </button>
+            <button className="btn" onClick={() => paginate(currentPage + 1)} disabled={currentPage === Math.ceil(rows.length / itemsPerPage)}>
+              Next
+            </button>
+          </div>
           {modalOpen && (
             <Modal
               closeModal={() => {
@@ -156,6 +169,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 

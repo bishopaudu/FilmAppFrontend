@@ -19,7 +19,8 @@
   
   .table thead {
     background-color:  #1d4ed8;
-    color: #222;
+    color: #fff;
+    font-size: 20px;
   }
   
   .table th,
@@ -27,11 +28,7 @@
     padding: 0.8rem;
   }
   
-  /*.table td {
-    border-top: 0.5px solid #ddd;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }*/
+ 
   .table td {
     border-top: 0.5px solid #ddd;
     overflow: hidden;
