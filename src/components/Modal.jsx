@@ -1,10 +1,10 @@
 /* eslint-disable react/prop-types */
 import  { useState } from "react";
 import axios from "axios";
-
 import "./Modal.css";
+import {popupMessages} from "../utils"
 
-export const Modal = ({ closeModal, onSubmit, defaultValue }) => {
+export const Modal = ({ closeModal, onSubmit, defaultValue,popup,popupMessage}) => {
   const [formState, setFormState] = useState(
     defaultValue || {
       title: "",
@@ -41,21 +41,19 @@ export const Modal = ({ closeModal, onSubmit, defaultValue }) => {
   
     if (!validateForm()) return;
     try {
-      // Make a POST or PUT request based on whether defaultValue is provided
       const response = defaultValue
-        ? await axios.put(`http://localhost:8081/FilmAppApi/films/${defaultValue.id}`, formState,{
-          headers: {"Access-Control-Allow-Origin": "*"}
-        })
-        : await axios.post('http://localhost:8081/FilmAppApi/films', formState,{
-          headers: {"Access-Control-Allow-Origin": "*"}
-        });
-      
-      // If the request is successful, call the onSubmit function with the response data
-      onSubmit(response.data);
-      // Close the modal after submission
+        ? await axios.put(`http://localhost:8081/FilmAppApi/films/${defaultValue.id}`, formState,
+      )
+        : await axios.post('http://localhost:8081/FilmAppApi/films', formState,
+        );
+          onSubmit(response.data);
       closeModal();
+      popup(true);
+      popupMessage(popupMessages.added)
+      setTimeout(() => {
+        popup(false);
+      }, 3000);
     } catch (error) {
-      // If there's an error, log it to the console
       console.error('Error submitting form:', error);
     }
   };
