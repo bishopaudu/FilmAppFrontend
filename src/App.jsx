@@ -8,24 +8,19 @@ import { Modal } from "./components/Modal";
 import { popupMessages } from "./utils";
 
 export default function App() {
- /* var popupMessages = {
-    added:"movie added succesfully",
-    deleted:"movie deleted successfully",
-    updated:"movie updated successfully",
-  }*/
-  const[popupMessage,setPopupMessages]= useState(null)
-  const[showPopup,setShowPopup] = useState(false)
+
+  const [popupMessage, setPopupMessages] = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [dataRows, setDataRows] = useState([]);
-  const [searchId, setSearchId] = useState('');
-  const [responseFormat, setResponseFormat] = useState('json');
+  const [searchId, setSearchId] = useState("");
+  const [responseFormat, setResponseFormat] = useState("json");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-
-  const getallFilms = "http://localhost:8081/FilmAppApi/films/" 
+  const getallFilms = "http://localhost:8081/FilmAppApi/films/";
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -34,7 +29,7 @@ export default function App() {
 
   useEffect(() => {
     fetchFilms();
-  }, [responseFormat,currentPage]);
+  }, [responseFormat, currentPage]);
 
   useEffect(() => {
     console.log(dataRows.length);
@@ -48,7 +43,7 @@ export default function App() {
     try {
       const response = await axios.get(getallFilms, {
         headers: {
-          Accept: `application/${responseFormat}`,
+          Accept: `application/json`,
         },
       });
       setRows(response.data);
@@ -65,11 +60,13 @@ export default function App() {
 
   const handleDeleteRow = async (targetIndex) => {
     try {
-      await axios.delete(`http://localhost:8081/FilmAppApi/films/${rows[targetIndex].id}`);
-      setPopupMessages(popupMessages.deleted)
-      setShowPopup(true)
+      await axios.delete(
+        `http://localhost:8081/FilmAppApi/films/${rows[targetIndex].id}`
+      );
+      setPopupMessages(popupMessages.deleted);
+      setShowPopup(true);
       setTimeout(() => {
-        setShowPopup(false)
+        setShowPopup(false);
       }, 3000);
       setRows(rows.filter((_, idx) => idx !== targetIndex));
     } catch (error) {
@@ -83,32 +80,32 @@ export default function App() {
   };
 
   const searchFilmById = async (filmId) => {
-      try {
-        const response = await axios.get(`http://localhost:8081/FilmAppApi/films/${filmId}`, {
+    try {
+      const response = await axios.get(
+        `http://localhost:8081/FilmAppApi/films/${filmId}`,
+        {
           headers: {
-            Accept: `application/${responseFormat}`,
+            Accept: `application/json`,
           },
-        });
-        return response.data;
-      } catch (error) {
-        console.error("Error searching film by ID:", error);
-        return null;
-      }
-   
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error searching film by ID:", error);
+      return null;
+    }
   };
-  
 
   const handleSearch = async () => {
-    setLoading(true); 
+    setLoading(true);
     const filmData = await searchFilmById(searchId);
     if (filmData) {
-      setRows([filmData]); 
+      setRows([filmData]);
     } else {
-      setRows([]); 
+      setRows([]);
     }
-    setLoading(false); 
+    setLoading(false);
   };
-  
 
   const handleSubmit = (newRow) => {
     if (rowToEdit === null) {
@@ -119,13 +116,15 @@ export default function App() {
       // Update existing row
       setRows(
         rows.map((currRow, idx) => {
-          if (idx !== rowToEdit) return currRow; // If not the edited row, return as is
-          setShowPopup(true)
-          setPopupMessages(popupMessages.updated)
+          // If not the edited row, return as is
+          if (idx !== rowToEdit) return currRow; 
+          setShowPopup(true);
+          setPopupMessages(popupMessages.updated);
           setTimeout(() => {
-            setShowPopup(false)
+            setShowPopup(false);
           }, 3000);
-          return newRow; // If the edited row, return the new edited row
+          // If the edited row, return the new edited row
+          return newRow; 
         })
       );
     }
@@ -133,11 +132,7 @@ export default function App() {
 
   return (
     <div className="App">
-        {showPopup && (
-        <div className="success-popup">
-          {popupMessage}
-        </div>
-      )}
+      {showPopup && <div className="success-popup">{popupMessage}</div>}
       <div className="search-container">
         <input
           type="text"
@@ -154,9 +149,9 @@ export default function App() {
             value={responseFormat}
             onChange={(e) => handleFormatChange(e.target.value)}
           >
-            <option value="json">JSON</option>
-            <option value="xml">XML</option>
-            <option value="text">Text</option>
+           <option value="application/json">JSON</option>
+            <option value="application/xml">XML</option>
+            <option value="text/plain">Text</option>
           </select>
         </div>
         <button onClick={() => setModalOpen(true)} className="btn">
@@ -172,16 +167,42 @@ export default function App() {
             rows={currentItems}
             deleteRow={handleDeleteRow}
             editRow={handleEditRow}
+            responseFormat={responseFormat}
           />
-            {/* Pagination controls */}
-            <div className="pagination-container">
-            <button className="btn" onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
+          {/* Pagination controls */}
+          <div className="pagination-container">
+            <button
+              className="btn"
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
               Previous
             </button>
-            <button className="btn" onClick={() => paginate(currentPage + 1)} disabled={currentPage === Math.ceil(rows.length / itemsPerPage)}>
+            {Array.from(
+              { length: Math.ceil(rows.length / itemsPerPage) },
+              (_, index) =>
+                index >= currentPage - 2 &&
+                index <= currentPage + 2 && ( 
+                  <button
+                    key={index}
+                    className={`btn ${
+                      currentPage === index + 1 ? "active" : ""
+                    }`}
+                    onClick={() => paginate(index + 1)}
+                  >
+                    {index + 1}
+                  </button>
+                )
+            )}
+            <button
+              className="btn"
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === Math.ceil(rows.length / itemsPerPage)}
+            >
               Next
             </button>
           </div>
+
           {modalOpen && (
             <Modal
               closeModal={() => {
@@ -199,7 +220,3 @@ export default function App() {
     </div>
   );
 }
-
-
-
-

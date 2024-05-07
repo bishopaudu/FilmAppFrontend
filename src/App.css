@@ -60,6 +60,9 @@
 .pagination-container {
   margin-top: 20px;
   padding-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
 }
 
 /*.pagination-button {
@@ -82,6 +85,24 @@
   background-color: #cccccc;
   cursor: not-allowed;
 }*/
+.pagination-container button {
+  margin: 0 5px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  background-color: #1d4ed8;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.pagination-container button:hover {
+  background-color: #f0f0f0;
+}
+
+.pagination-container button.active {
+  background-color: #d9534f;
+  color: #fff;
+}
 .success-popup {
   position: fixed;
   top: 50%;
