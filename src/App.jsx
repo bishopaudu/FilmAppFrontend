@@ -8,7 +8,7 @@ import { Modal } from "./components/Modal";
 import { popupMessages } from "./utils";
 
 export default function App() {
-
+  const [rowToEdit, setRowToEdit] = useState(null);
   const [popupMessage, setPopupMessages] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [rows, setRows] = useState([]);
@@ -16,9 +16,11 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [dataRows, setDataRows] = useState([]);
   const [searchId, setSearchId] = useState("");
-  const [responseFormat, setResponseFormat] = useState("json");
+  const [searchTitle, setSearchTitle] = useState("");
+  const [responseFormat, setResponseFormat] = useState("application/json");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(100);
+  const [noResults, setNoResults] = useState(false);
 
   const getallFilms = "http://localhost:8081/FilmAppApi/films/";
 
@@ -40,14 +42,20 @@ export default function App() {
   };
 
   const fetchFilms = async () => {
+    setLoading(true);
+    setNoResults(false);
     try {
       const response = await axios.get(getallFilms, {
         headers: {
-          Accept: `application/json`,
+          Accept: responseFormat,
         },
       });
-      setRows(response.data);
-      setDataRows(response.data);
+      if (responseFormat === "application/json") {
+        setRows(response.data);
+        setDataRows(response.data);
+      } else {
+        console.log(response.data);
+      }
       console.log(response.data);
     } catch (error) {
       console.error("Error fetching films:", error);
@@ -55,8 +63,6 @@ export default function App() {
       setLoading(false);
     }
   };
-
-  const [rowToEdit, setRowToEdit] = useState(null);
 
   const handleDeleteRow = async (targetIndex) => {
     try {
@@ -75,6 +81,7 @@ export default function App() {
   };
 
   const handleEditRow = (idx) => {
+    console.log(idx);
     setRowToEdit(idx);
     setModalOpen(true);
   };
@@ -85,51 +92,130 @@ export default function App() {
         `http://localhost:8081/FilmAppApi/films/${filmId}`,
         {
           headers: {
-            Accept: `application/json`,
+            Accept: responseFormat,
           },
         }
       );
-      return response.data;
+      if (responseFormat === "application/json") {
+        return response.data;
+      } else {
+        console.log(response.data);
+        return null;
+      }
     } catch (error) {
       console.error("Error searching film by ID:", error);
       return null;
     }
   };
 
+  const searchFilmByTitle = async (filmTitle) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8081/FilmAppApi/films?title=${filmTitle}`,
+        {
+          headers: {
+            Accept: responseFormat,
+          },
+        }
+      );
+      if (responseFormat === "application/json") {
+        return response.data;
+      } else {
+        console.log(response.data);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error searching film by title:", error);
+      return null;
+    }
+  };
+
   const handleSearch = async () => {
     setLoading(true);
-    const filmData = await searchFilmById(searchId);
+    setNoResults(false);
+    let filmData = null;
+    if (searchId) {
+      filmData = await searchFilmById(searchId);
+    } else if (searchTitle) {
+      filmData = await searchFilmByTitle(searchTitle);
+    }
+
     if (filmData) {
-      setRows([filmData]);
+      setRows(Array.isArray(filmData) ? filmData : [filmData]);
     } else {
       setRows([]);
+      setNoResults(true);
     }
     setLoading(false);
   };
 
-  const handleSubmit = (newRow) => {
+  const handleSubmit = async (newRow) => {
     if (rowToEdit === null) {
       // Add new row
       setRows([...rows, newRow]);
-      //setRows([newRow, ...rows]);
+        // Fetch updated movie list
+        const updatedMovies = await axios.get(getallFilms);
+        setRows(updatedMovies.data);
+        setPopupMessages(popupMessages.added);
+        setShowPopup(true);
+        setTimeout(() => {
+          setShowPopup(false);
+        }, 3000);
     } else {
       // Update existing row
+      const editedRowIndex = (currentPage - 1) * itemsPerPage + rowToEdit;
       setRows(
         rows.map((currRow, idx) => {
-          // If not the edited row, return as is
-          if (idx !== rowToEdit) return currRow; 
-          setShowPopup(true);
-          setPopupMessages(popupMessages.updated);
-          setTimeout(() => {
-            setShowPopup(false);
-          }, 3000);
-          // If the edited row, return the new edited row
-          return newRow; 
+          if (idx === editedRowIndex) {
+            return { ...currRow, ...newRow };
+          }
+          return currRow;
         })
       );
+      setShowPopup(true);
+      setPopupMessages(popupMessages.updated);
+      const updatedMovies = await axios.get(getallFilms);
+        setRows(updatedMovies.data);
+      setTimeout(() => {
+        setShowPopup(false);
+      }, 3000);
     }
   };
-
+  /*const handleSubmit = async (newRow) => {
+    if (rowToEdit === null) {
+      try {
+        const response = await axios.post(getallFilms, newRow);
+        // Fetch updated movie list
+        const updatedMovies = await axios.get(getallFilms);
+        setRows(updatedMovies.data);
+        console.log(updatedMovies.data);
+        setPopupMessages(popupMessages.added);
+        setShowPopup(true);
+        setTimeout(() => {
+          setShowPopup(false);
+        }, 3000);
+      } catch (error) {
+        console.error("Error adding film:", error);
+      }
+    } else {
+      // Update existing row
+      const editedRowIndex = (currentPage - 1) * itemsPerPage + rowToEdit;
+      setRows(
+        rows.map((currRow, idx) => {
+          if (idx === editedRowIndex) {
+            return { ...currRow, ...newRow };
+          }
+          return currRow;
+        })
+      );
+      setShowPopup(true);
+      setPopupMessages(popupMessages.updated);
+      setTimeout(() => {
+        setShowPopup(false);
+      }, 3000);
+    }
+  };*/
+  
   return (
     <div className="App">
       {showPopup && <div className="success-popup">{popupMessage}</div>}
@@ -141,6 +227,13 @@ export default function App() {
           value={searchId}
           onChange={(e) => setSearchId(e.target.value)}
         />
+        <input
+          type="text"
+          className="search-bar"
+          placeholder="Search by Title"
+          value={searchTitle}
+          onChange={(e) => setSearchTitle(e.target.value)}
+        />
         <button className="btn" onClick={handleSearch}>
           Search
         </button>
@@ -149,7 +242,7 @@ export default function App() {
             value={responseFormat}
             onChange={(e) => handleFormatChange(e.target.value)}
           >
-           <option value="application/json">JSON</option>
+            <option value="application/json">JSON</option>
             <option value="application/xml">XML</option>
             <option value="text/plain">Text</option>
           </select>
@@ -163,6 +256,7 @@ export default function App() {
         <Loader />
       ) : (
         <>
+          {noResults && <div className="no-results">No results found</div>}
           <Table
             rows={currentItems}
             deleteRow={handleDeleteRow}
@@ -180,19 +274,27 @@ export default function App() {
             </button>
             {Array.from(
               { length: Math.ceil(rows.length / itemsPerPage) },
-              (_, index) =>
-                index >= currentPage - 2 &&
-                index <= currentPage + 2 && ( 
-                  <button
-                    key={index}
-                    className={`btn ${
-                      currentPage === index + 1 ? "active" : ""
-                    }`}
-                    onClick={() => paginate(index + 1)}
-                  >
-                    {index + 1}
-                  </button>
-                )
+              (_, index) => {
+                const startPage = Math.max(1, currentPage - 2);
+                const endPage = Math.min(
+                  startPage + 4,
+                  Math.ceil(rows.length / itemsPerPage)
+                );
+                if (index >= startPage - 1 && index <= endPage - 1) {
+                  return (
+                    <button
+                      key={index}
+                      className={`btn ${
+                        currentPage === index + 1 ? "active" : ""
+                      }`}
+                      onClick={() => paginate(index + 1)}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                }
+                return null;
+              }
             )}
             <button
               className="btn"
@@ -220,3 +322,4 @@ export default function App() {
     </div>
   );
 }
+
